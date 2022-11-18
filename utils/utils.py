@@ -37,3 +37,16 @@ def verify_token(headers, creds):
     else:
         raise AuthError({"code": "no auth header",
                         "description": "Authorization header is missing"}, 401)
+
+
+def parse_jwt(jwt, creds):
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            jwt,
+            requests.Request(),
+            creds["web"].get("client_id"))
+    except Exception as e:
+        raise AuthError({"Error": str(e)}, 401)
+
+    return idinfo
+

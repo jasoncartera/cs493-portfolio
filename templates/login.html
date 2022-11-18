@@ -3,15 +3,19 @@
 
 <html>
 <head>
-  <title>CS493 Portfolio</title>
-  <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>CS493 Fall 2022 - Portfolio</title>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-
-  <h1>CS493 Fall 2022 - Portfolio</h1>
-  <p>Click the button below to generate a JWT token to use with the boats API.</p>
-  <form action="/button" method="get">
-      <button type="submit">Login</button>
-  </form>
+<div class="wrapper">
+    <h1>CS493 Fall 2022 - Portfolio</h1>
+    <p>Click the button below to create an account or login.</p>
+    <form action="/button">
+        <button type="submit" class="login-with-google-btn">
+            Create Account / Sign in with Google
+        </button>
+    </form>
+    <p>Successful login will generate a JWT token to use with the API.</p>
+</div>
 </body>
 </html>

@@ -5,9 +5,12 @@ import hashlib
 import os
 
 import constants
-
+from utils import utils
+from models import users_model as user
+import users
 
 app = Flask(__name__)
+app.register_blueprint(users.bp)
 
 client = datastore.Client()
 creds = constants.creds
@@ -40,7 +43,12 @@ def oauth_callback():
 
     authorization_response = request.url
     flow.fetch_token(authorization_response=authorization_response)
-    return render_template('user_info.html', user=flow.credentials.id_token)
+    jwt_token = flow.credentials.id_token
+    idinfo = utils.parse_jwt(jwt_token, creds)
+    user.add_user(idinfo)
+    return render_template('user_info.html', token=jwt_token, uid=idinfo[
+        "sub"], name=idinfo["name"])
+
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host="localhost", port=8080, debug=True, ssl_context='adhoc')
