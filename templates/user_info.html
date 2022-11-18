@@ -1,0 +1,19 @@
+<!doctype html>
+
+
+<html>
+<head>
+  <title>CS493 HW7 - Authorization</title>
+  <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>User info!</h1>
+    <div class="token">
+        <p><b>Thanks for authenticating, your JWT is:</b></p>
+        <p>{{ user }}</p>
+    </div>
+    <a href="{{url_for('index')}}">Go home</a>
+
+
+</body>
+</html>
