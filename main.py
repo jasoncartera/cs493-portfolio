@@ -10,11 +10,13 @@ from models import users_model as user
 import users
 import boats
 import loads
+import owners
 
 app = Flask(__name__)
 app.register_blueprint(users.bp)
 app.register_blueprint(boats.bp)
 app.register_blueprint(loads.bp)
+app.register_blueprint(owners.bp)
 
 client = datastore.Client()
 creds = constants.creds

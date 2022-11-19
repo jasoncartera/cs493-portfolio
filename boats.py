@@ -1,9 +1,17 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from google.cloud import datastore
 from models import boat_model as model
+from utils import utils
 
 client = datastore.Client()
 bp = Blueprint('boats', __name__, url_prefix='/boats')
+
+
+@bp.errorhandler(utils.AuthError)
+def handle_auth_error(ex):
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
 
 
 @bp.route('', methods=['POST','GET'])
