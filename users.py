@@ -18,3 +18,12 @@ def handle_auth_error(ex):
 def get_users():
     results = users.get_users()
     return results
+
+
+@bp.route('<id>/boats', methods=['GET'])
+def get_owner_boats(id):
+    if request.method == 'GET':
+        results = users.get_boat_by_user(id)
+        return results, 200
+    else:
+        return 'Method not recognized'
