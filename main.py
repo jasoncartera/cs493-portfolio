@@ -8,9 +8,13 @@ import constants
 from utils import utils
 from models import users_model as user
 import users
+import boats
+import loads
 
 app = Flask(__name__)
 app.register_blueprint(users.bp)
+app.register_blueprint(boats.bp)
+app.register_blueprint(loads.bp)
 
 client = datastore.Client()
 creds = constants.creds
@@ -51,4 +55,4 @@ def oauth_callback():
 
 
 if __name__ == '__main__':
-    app.run(host="localhost", port=8080, debug=True, ssl_context='adhoc')
+    app.run(host="localhost", port=8080, debug=True)

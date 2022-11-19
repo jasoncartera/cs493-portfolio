@@ -1,5 +1,7 @@
 from utils import utils
 users = "users"
+boats = "boats"
+loads = "loads"
 
 creds = {
     "web": {
