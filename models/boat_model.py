@@ -86,7 +86,7 @@ def update_boat_put(content, boat_id):
                     "name": content["name"],
                     "type": content["type"],
                     "length": content["length"],
-                    "public": content["public"],
+                    "owner": boat["owner"],
                     "loads": boat["loads"]
                 }
             )
@@ -176,6 +176,7 @@ def put_load_to_boat(bid, lid):
                         "name": boat["name"],
                         "type": boat["type"],
                         "length": boat["length"],
+                        "owner": boat["owner"],
                         "loads": boat_loads,
                     }
                 )
@@ -220,6 +221,7 @@ def delete_load_from_boat(bid, lid):
                         "name": boat["name"],
                         "type": boat["type"],
                         "length": boat["length"],
+                        "owner": boat["owner"],
                         "loads": boat_loads,
                     }
                 )
@@ -240,30 +242,6 @@ def delete_load_from_boat(bid, lid):
     else:
         return {"Error": "No boat with this boat_id is loaded with the "
                          "load with this load_id"}, 404
-
-
-def get_loads_from_boat(bid):
-    """
-    Gets all the loads from a boat
-    Returns:
-        - if authorized: loads from public and private boats
-        - if not authorized: only loads on public boats
-    """
-    # TODO: add authorization
-    boat_key = client.key(constants.boats, int(bid))
-    boat = client.get(key=boat_key)
-    if boat:
-        if boat["loads"]:
-            loads = []
-            for load in boat["loads"]:
-                load_key = client.key(constants.loads, load["id"])
-                load = client.get(key=load_key)
-                load["self"] = request.url_root + constants.loads + "/" + str(
-                    load.key.id)
-                loads.append(load)
-        return {"loads": loads}
-    else:
-        return {"Error": "No boat with this boat_id exists"}, 404
 
 
 def is_load_on_boat(lid):

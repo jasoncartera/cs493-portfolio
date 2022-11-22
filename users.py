@@ -16,14 +16,21 @@ def handle_auth_error(ex):
 
 @bp.route('', methods=['GET'])
 def get_users():
-    results = users.get_users()
-    return results
+    if not request.accept_mimetypes.accept_json:
+        return '', 406
+    if request.method == 'GET':
+        results = users.get_users()
+        return results
+    else:
+        return "Method not recognized"
 
 
 @bp.route('<id>/boats', methods=['GET'])
 def get_owner_boats(id):
+    if not request.accept_mimetypes.accept_json:
+        return '', 406
     if request.method == 'GET':
         results = users.get_boat_by_user(id)
         return results, 200
     else:
-        return 'Method not recognized'
+        return "Method not recognized"

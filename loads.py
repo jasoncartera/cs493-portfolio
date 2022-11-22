@@ -8,6 +8,8 @@ bp = Blueprint('loads', __name__, url_prefix='/loads')
 
 @bp.route('', methods=['POST', 'GET'])
 def loads_get_post():
+    if not request.accept_mimetypes.accept_json:
+        return '', 406
     if request.method == 'POST':
         content = request.get_json()
         return model.add_load(content)
@@ -17,11 +19,13 @@ def loads_get_post():
         result, next_cursor = model.get_loads(cursor)
         return result
     else:
-        return 'Method not recognized'
+        return "Method not recognized"
 
 
 @bp.route('/<id>', methods=['PATCH', 'PUT', 'DELETE', 'GET'])
 def load_patch_delete_get(id):
+    if not request.accept_mimetypes.accept_json:
+        return '', 406
     if request.method == 'PATCH':
         content = request.get_json()
         return model.update_load_patch(content, id)
@@ -33,5 +37,5 @@ def load_patch_delete_get(id):
     elif request.method == 'GET':
         return model.get_load_by_key(id)
     else:
-        return 'Method not recognized'
+        return "Method not recognized"
 
