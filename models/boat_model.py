@@ -68,6 +68,7 @@ def get_boat_by_key(boat_id):
         for load in boat["loads"]:
             load["self"] = request.url_root + constants.loads + "/" + str(
                 load["id"])
+        return boat
     else:
         return {"Error": "No boat with this boat_id exists"}, 404
 
@@ -79,7 +80,7 @@ def update_boat_put(content, boat_id):
     boat = client.get(key=boat_key)
     if boat:
         if boat.get("owner") != idinfo.get("sub"):
-            return {"Error": "Not authorized to view this boat"}, 403
+            return {"Error": "Not authorized to edit this boat"}, 403
         try:
             boat.update(
                 {
@@ -111,7 +112,7 @@ def update_boat_patch(content, boat_id):
     boat = client.get(key=boat_key)
     if boat:
         if boat.get("owner") != idinfo.get("sub"):
-            return {"Error": "Not authorized to view this boat"}, 403
+            return {"Error": "Not authorized to edit this boat"}, 403
         for key in content:
             boat.update(
                 {
@@ -131,10 +132,13 @@ def update_boat_patch(content, boat_id):
 
 
 def delete_boat(boat_id):
-    utils.verify_token(request.headers, creds)
+    idinfo = utils.verify_token(request.headers, creds)
     key = client.key(constants.boats, int(boat_id))
     boat = client.get(key=key)
     if client.get(key):
+        if boat.get("owner") != idinfo.get("sub"):
+            return {"Error": "Not authorized to delete a"
+                             " load from this boat"}, 403
         loads = list(boat["loads"])
         # Remove loads from deleted boats
         if loads:
@@ -166,7 +170,8 @@ def put_load_to_boat(bid, lid):
     if boat and load:
         if boat["owner"] == idinfo["sub"]:
             if is_load_on_boat(int(lid)):
-                return {"Error": "The load is already loaded on another boat"}, 403
+                return {"Error": "The load is already loaded on another "
+                                 "boat"}, 403
             else:
                 boat_loads = list(boat["loads"])
                 new_load = {"id": load.key.id}
@@ -177,7 +182,7 @@ def put_load_to_boat(bid, lid):
                         "type": boat["type"],
                         "length": boat["length"],
                         "owner": boat["owner"],
-                        "loads": boat_loads,
+                        "loads": boat_loads
                     }
                 )
                 client.put(boat)
@@ -206,8 +211,8 @@ def delete_load_from_boat(bid, lid):
     boat_key = client.key(constants.boats, int(bid))
     load = client.get(key=load_key)
     boat = client.get(key=boat_key)
-    if boat["owner"] == idinfo["sub"]:
-        if boat and load:
+    if boat and load:
+        if boat["owner"] == idinfo["sub"]:
             if not is_load_on_boat(int(lid)):
                 return {"Error": "No boat with this boat_id is loaded with "
                                  "the load with this load_id"}, 404

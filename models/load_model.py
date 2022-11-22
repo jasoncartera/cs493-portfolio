@@ -76,7 +76,7 @@ def update_load_patch(content, load_id):
             load["carrier"]["self"] = request.url_root + constants.boats + \
                                       "/" + str(load["carrier"]["id"])
         load["id"] = int(load_id)
-        load["self"] = request.base_url + "/" + str(load.key.id)
+        load["self"] = request.base_url
         return load
 
     else:
@@ -102,7 +102,7 @@ def update_load_put(content, load_id):
                 load["carrier"]["self"] = request.url_root + constants.boats + \
                                           "/" + str(load["carrier"]["id"])
             load["id"] = int(load_id)
-            load["self"] = request.base_url + "/" + str(load.key.id)
+            load["self"] = request.base_url
             return load
         except KeyError:
             return {"Error": "The request object is missing at least one of "
@@ -132,7 +132,7 @@ def delete_load(load_id):
                 }
             )
             client.put(boat)
-            client.delete(load_key)
-            return '', 204
+        client.delete(load_key)
+        return '', 204
     else:
         return {"Error": "No load with this load_id exists"}, 404
