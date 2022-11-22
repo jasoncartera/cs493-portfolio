@@ -9,6 +9,7 @@ creds = constants.creds
 
 
 def add_boat(content):
+    """ Adds a boat. Must have a valid JWT token. """
     idinfo = utils.verify_token(request.headers, creds)
     new_boat = datastore.Entity(key=client.key(constants.boats))
     try:
@@ -17,7 +18,6 @@ def add_boat(content):
                 "name": content["name"],
                 "type": content["type"],
                 "length": content["length"],
-                "public": content["public"],
                 "owner": idinfo["sub"]
             }
         )
@@ -32,21 +32,14 @@ def add_boat(content):
 
 
 def get_boats(cursor=None):
-    try:
-        idinfo = utils.verify_token(request.headers, creds)
-        query = client.query(kind=constants.boats)
-        query.add_filter("owner", "=", idinfo["sub"])
-        query_iter = query.fetch(start_cursor=cursor, limit=5)
-        pages = next(query_iter.pages)
-        results = list(pages)
-        next_cursor = query_iter.next_page_token
-    except utils.AuthError:
-        query = client.query(kind=constants.boats)
-        query.add_filter("public", "=", True)
-        query_iter = query.fetch(start_cursor=cursor, limit=5)
-        pages = next(query_iter.pages)
-        results = list(pages)
-        next_cursor = query_iter.next_page_token
+    """ Gets all boats for an authorized user. """
+    idinfo = utils.verify_token(request.headers, creds)
+    query = client.query(kind=constants.boats)
+    query.add_filter("owner", "=", idinfo["sub"])
+    query_iter = query.fetch(start_cursor=cursor, limit=5)
+    pages = next(query_iter.pages)
+    results = list(pages)
+    next_cursor = query_iter.next_page_token
     for e in results:
         e["id"] = e.key.id
         e["self"] = request.base_url + "/" + str(e.key.id)
@@ -60,43 +53,47 @@ def get_boats(cursor=None):
 
 
 def get_boat_by_key(boat_id):
-    idinfo = dict()
-    try:
-        idinfo = utils.verify_token(request.headers, creds)
-        boat_key = client.key(constants.boats, int(boat_id))
-        boat = client.get(key=boat_key)
-    except utils.AuthError:
-        boat_key = client.key(constants.boats, int(boat_id))
-        boat = client.get(key=boat_key)
+    """
+    Gets a boat by key
+    Returns: the boat if authorized
+    """
+    idinfo = utils.verify_token(request.headers, creds)
+    boat_key = client.key(constants.boats, int(boat_id))
+    boat = client.get(key=boat_key)
     if boat:
+        if boat.get("owner") != idinfo.get("sub"):
+            return {"Error": "Not authorized to view this boat"}, 403
         boat["id"] = int(boat_id)
         boat["self"] = request.base_url
         for load in boat["loads"]:
             load["self"] = request.url_root + constants.loads + "/" + str(
                 load["id"])
-        if boat["public"] is True:
-            return boat
-        elif boat["owner"] == idinfo.get("sub"):
-            return boat
-        else:
-            return {"Error": "Not authorized to view this boat"}, 403
     else:
         return {"Error": "No boat with this boat_id exists"}, 404
 
 
-def update_boat(content, boat_id):
+def update_boat_put(content, boat_id):
+    """ Updates a boat with PUT method """
+    idinfo = utils.verify_token(request.headers, creds)
     boat_key = client.key(constants.boats, int(boat_id))
     boat = client.get(key=boat_key)
     if boat:
+        if boat.get("owner") != idinfo.get("sub"):
+            return {"Error": "Not authorized to view this boat"}, 403
         try:
             boat.update(
                 {
                     "name": content["name"],
                     "type": content["type"],
                     "length": content["length"],
+                    "public": content["public"],
+                    "loads": boat["loads"]
                 }
             )
             client.put(boat)
+            for load in boat["loads"]:
+                load["self"] = request.url_root + constants.loads + "/" + \
+                               str(load["id"])
             boat["id"] = int(boat_id)
             boat["self"] = request.base_url + "/" + str(boat.key.id)
             return boat
@@ -107,21 +104,60 @@ def update_boat(content, boat_id):
         return {"Error": "No boat with this boat_id exists"}, 404
 
 
-def delete_boat(boat_id):
+def update_boat_patch(content, boat_id):
+    """ Updates a boat with PATCH """
     idinfo = utils.verify_token(request.headers, creds)
     boat_key = client.key(constants.boats, int(boat_id))
     boat = client.get(key=boat_key)
     if boat:
-        if boat["owner"] == idinfo["sub"]:
-            client.delete(boat_key)
-            return '', 204
-        else:
-            return {"Error": "Not authorized to delete this boat"}, 403
+        if boat.get("owner") != idinfo.get("sub"):
+            return {"Error": "Not authorized to view this boat"}, 403
+        for key in content:
+            boat.update(
+                {
+                    key: content[key]
+                }
+            )
+        client.put(boat)
+        for load in boat["loads"]:
+            load["self"] = request.url_root + constants.loads + "/" + \
+                           str(load["id"])
+        boat["id"] = int(boat_id)
+        boat["self"] = request.base_url + "/" + str(boat.key.id)
+        return boat
+
     else:
-        return {"Error": "No boat with this boat_id exists"}, 403
+        return {"Error": "No boat with this boat_id exists"}, 404
+
+
+def delete_boat(boat_id):
+    utils.verify_token(request.headers, creds)
+    key = client.key(constants.boats, int(boat_id))
+    boat = client.get(key=key)
+    if client.get(key):
+        loads = list(boat["loads"])
+        # Remove loads from deleted boats
+        if loads:
+            for load in loads:
+                load_key = client.key(constants.loads, load["id"])
+                load = client.get(key=load_key)
+                load.update(
+                    {
+                        "volume": load["volume"],
+                        "carrier": None,
+                        "item": load["item"],
+                        "creation_date": load["creation_date"]
+                    }
+                )
+                client.put(load)
+        client.delete(key)
+        return '', 204
+    else:
+        return {"Error": "No boat with this boat_id exists"}, 404
 
 
 def put_load_to_boat(bid, lid):
+    """ Puts a load to a boat only if authorized as the boat owner """
     idinfo = utils.verify_token(request.headers, creds)
     load_key = client.key(constants.loads, int(lid))
     boat_key = client.key(constants.boats, int(bid))
@@ -163,6 +199,7 @@ def put_load_to_boat(bid, lid):
 
 
 def delete_load_from_boat(bid, lid):
+    """ Deletes a load from a boat if authorized as boat owner """
     idinfo = utils.verify_token(request.headers, creds)
     load_key = client.key(constants.loads, int(lid))
     boat_key = client.key(constants.boats, int(bid))
@@ -206,6 +243,13 @@ def delete_load_from_boat(bid, lid):
 
 
 def get_loads_from_boat(bid):
+    """
+    Gets all the loads from a boat
+    Returns:
+        - if authorized: loads from public and private boats
+        - if not authorized: only loads on public boats
+    """
+    # TODO: add authorization
     boat_key = client.key(constants.boats, int(bid))
     boat = client.get(key=boat_key)
     if boat:
@@ -223,6 +267,7 @@ def get_loads_from_boat(bid):
 
 
 def is_load_on_boat(lid):
+    """ Utility function to check if a boat is on a load. """
     query = client.query(kind=constants.boats)
     results = list(query.fetch())
     for boat in results:

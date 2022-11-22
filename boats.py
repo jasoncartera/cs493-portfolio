@@ -28,15 +28,16 @@ def boats_get_post():
         return 'Method not recognized'
 
 
-@bp.route('/<id>', methods=['PATCH','DELETE','GET'])
+@bp.route('/<id>', methods=['PUT','PATCH','DELETE','GET'])
 def boat_patch_delete_get(id):
-    if request.method == 'PATCH':
+    if request.method == 'PUT':
         content = request.get_json()
-        return model.update_boat(content, id)
-
+        return model.update_boat_put(content, id)
+    elif request.method == 'PATCH':
+        content = request.get_json()
+        return model.update_boat_patch(content, id)
     elif request.method == 'DELETE':
         return model.delete_boat(id)
-
     elif request.method == 'GET':
         return model.get_boat_by_key(id)
     else:
@@ -44,7 +45,7 @@ def boat_patch_delete_get(id):
 
 
 @bp.route('/<bid>/loads/<lid>', methods=['PUT', 'DELETE'])
-def boat_put_load(lid, bid):
+def boat_put_delete_load(lid, bid):
     if request.method == 'PUT':
         return model.put_load_to_boat(bid, lid)
     if request.method == 'DELETE':
